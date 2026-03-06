@@ -1,4 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from 'react';
+import { useStore } from "./store";
+import { supabase } from "./supabase";
+import Auth from "./Auth";
 
 // ─── DATA ──────────────────────────────────────────────────────────────────
 const ROADMAP = [
@@ -678,74 +681,67 @@ function Section({ title, color, children }) {
   );
 }
 
+// ─── UTILITIES ────────────────────────────────────────────────────────────
+const playAudio = (text) => {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-IN";
+  utterance.rate = 0.9;
+  window.speechSynthesis.speak(utterance);
+};
+
 // ─── AI ANSWER CHECKER ────────────────────────────────────────────────────
-async function checkAnswerWithAI(question, userAnswer, chapter, apiKey) {
-  if (!apiKey || !apiKey.startsWith("sk-ant-")) {
-    throw new Error("Invalid API key. It should start with sk-ant-");
-  }
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+async function checkAnswerWithAI(question, userAnswer, chapter, mode = "check") {
+  const response = await fetch("/api/checkAnswer", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
+      "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1000,
-      messages: [{
-        role: "user",
-        content: `You are a 10th class SSC Telangana Mathematics teacher checking a student's answer.
-
-Chapter: ${chapter}
-Question: ${question}
-Student's Answer: ${userAnswer}
-
-Check if the student's answer is correct. Respond in this exact JSON format only, no extra text:
-{
-  "correct": true or false,
-  "score": "X/10",
-  "verdict": "one short line verdict",
-  "what_is_right": "what the student got right (be specific)",
-  "mistakes": "specific mistakes if any, or 'None' if perfect",
-  "correct_approach": "the correct method/answer in brief",
-  "tip": "one encouraging tip for improvement"
-}`
-      }]
+      question: `Chapter: ${chapter}\nQuestion: ${question}`,
+      answer: userAnswer
     })
   });
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    if (response.status === 401) throw new Error("Invalid API key. Please check your key at console.anthropic.com");
-    if (response.status === 429) throw new Error("Rate limited. Please wait a moment and try again.");
-    if (response.status === 400) throw new Error(errData?.error?.message || "Bad request. Please try a shorter question.");
-    throw new Error(errData?.error?.message || `API error (${response.status})`);
+    throw new Error(errData?.error || `Server Error (${response.status})`);
   }
+
+  // The serverless function now parses and cleans the JSON for us
   const data = await response.json();
-  const text = data.content.map(i => i.text || "").join("");
-  const clean = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(clean);
+  return data;
 }
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────
 export default function MathLock() {
-  const [screen, setScreen] = useState(() => loadState("ml_screen", "welcome"));
-  const [currentDay, setCurrentDay] = useState(() => loadState("ml_day", 1));
-  const [doneDays, setDoneDays] = useState(() => loadState("ml_doneDays", [0]));
-  const [doneTasks, setDoneTasks] = useState(() => loadState("ml_doneTasks", { "day_0": [0, 1, 2] }));
-  const [streak, setStreak] = useState(() => loadState("ml_streak", 1));
-  const [absent, setAbsent] = useState(() => loadState("ml_absent", 0));
-  const [phaseDone, setPhaseDone] = useState(() => loadState("ml_phaseDone", []));
-  const [dayScores, setDayScores] = useState(() => loadState("ml_scores", {}));
-  const [mistakes, setMistakes] = useState(() => loadState("ml_mistakes", []));
-
+  const screen = useStore(s => s.screen);
+  const setScreen = useStore(s => s.setScreen);
+  const currentDay = useStore(s => s.currentDay);
+  const setCurrentDay = useStore(s => s.setCurrentDay);
+  const doneDays = useStore(s => s.doneDays);
+  const setDoneDays = useStore(s => s.setDoneDays);
+  const doneTasks = useStore(s => s.doneTasks);
+  const setDoneTasks = useStore(s => s.setDoneTasks);
+  const streak = useStore(s => s.streak);
+  const setStreak = useStore(s => s.setStreak);
+  const absent = useStore(s => s.absent);
+  const setAbsent = useStore(s => s.setAbsent);
+  const phaseDone = useStore(s => s.phaseDone);
+  const setPhaseDone = useStore(s => s.setPhaseDone);
+  const dayScores = useStore(s => s.dayScores);
+  const setDayScores = useStore(s => s.setDayScores);
+  const mistakes = useStore(s => s.mistakes);
+  const setMistakes = useStore(s => s.setMistakes);
   const [phase, setPhase] = useState(0);
   const [timeLeft, setTimeLeft] = useState(PHASES[0].duration);
   const [running, setRunning] = useState(false);
   const [modal, setModal] = useState(null);
-  const [breakSec, setBreakSec] = useState(600);
   const [activeTab, setActiveTab] = useState("guide");
+
+  // Auth internal state
+  const [user, setUser] = useState(null);
+  const [authChecking, setAuthChecking] = useState(true);
 
   // Quiz state
   const [quizIdx, setQuizIdx] = useState(0);
@@ -758,8 +754,6 @@ export default function MathLock() {
   const [checkerA, setCheckerA] = useState("");
   const [checkerRes, setCheckerRes] = useState(null);
   const [checkerLoading, setCheckerLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(() => loadState("ml_apikey", ""));
-
   // Mistake notebook
   const [newMistake, setNewMistake] = useState("");
   const [mistakeChap, setMistakeChap] = useState("");
@@ -776,17 +770,6 @@ export default function MathLock() {
   const progress = Math.round((doneDays.length / ROADMAP.length) * 100);
   const circ = 2 * Math.PI * 48;
   const phaseFrac = 1 - timeLeft / PHASES[phase].duration;
-
-  useEffect(() => saveState("ml_screen", screen), [screen]);
-  useEffect(() => saveState("ml_day", currentDay), [currentDay]);
-  useEffect(() => saveState("ml_doneDays", doneDays), [doneDays]);
-  useEffect(() => saveState("ml_doneTasks", doneTasks), [doneTasks]);
-  useEffect(() => saveState("ml_streak", streak), [streak]);
-  useEffect(() => saveState("ml_absent", absent), [absent]);
-  useEffect(() => saveState("ml_phaseDone", phaseDone), [phaseDone]);
-  useEffect(() => saveState("ml_scores", dayScores), [dayScores]);
-  useEffect(() => saveState("ml_mistakes", mistakes), [mistakes]);
-
   useEffect(() => {
     if (running) {
       timerRef.current = setInterval(() => {
@@ -842,25 +825,13 @@ export default function MathLock() {
 
   function addMistake() {
     if (!newMistake.trim()) return;
-    setMistakes(prev => [{ id: Date.now(), text: newMistake, chapter: mistakeChap || day.chapter, day: currentDay + 1, date: new Date().toLocaleDateString() }, ...prev].slice(0, 50));
+    setMistakes(prev => [{ id: Date.now(), text: newMistake, chapter: mistakeChap || day.chapter, day: currentDay + 1, date: new Date().toLocaleDateString(), reviewCount: 0, nextReviewDate: Date.now() + 86400000 }, ...prev].slice(0, 50));
     setNewMistake(""); setMistakeChap("");
   }
 
   function deleteMistake(id) { setMistakes(prev => prev.filter(m => m.id !== id)); }
 
-  async function runChecker() {
-    if (!checkerQ.trim() || !checkerA.trim()) return;
-    if (!apiKey) { setCheckerRes({ correct: false, score: "?/10", verdict: "No API key provided", mistakes: "Missing API key", correct_approach: "Enter your Anthropic API key above", tip: "Get your key at console.anthropic.com → API Keys", what_is_right: "" }); return; }
-    setCheckerLoading(true); setCheckerRes(null);
-    try {
-      const res = await checkAnswerWithAI(checkerQ, checkerA, day.chapter, apiKey);
-      setCheckerRes(res);
-    } catch (e) {
-      const msg = e.message || "Unknown error";
-      setCheckerRes({ correct: false, score: "?/10", verdict: "Could not check — try again", mistakes: msg, correct_approach: "Make sure your API key is valid and has credits", tip: "If the error persists, check your API key at console.anthropic.com", what_is_right: "" });
-    }
-    setCheckerLoading(false);
-  }
+  // runChecker obsolete
 
   // Quiz helpers
   const quizSet = day.quizFormulas || [];
@@ -879,7 +850,30 @@ export default function MathLock() {
   function resetAllData() {
     ["ml_screen", "ml_day", "ml_doneDays", "ml_doneTasks", "ml_streak", "ml_absent", "ml_phaseDone", "ml_scores", "ml_mistakes", "ml_seeded"]
       .forEach(k => localStorage.removeItem(k));
+    if (supabase) supabase.auth.signOut();
     window.location.reload();
+  }
+
+  // ── AUTH CHECK ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!supabase) { setAuthChecking(false); return; }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthChecking(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (authChecking) {
+    return <div style={{ height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg, color: C.yellow, fontWeight: 900 }}>Loading...</div>;
+  }
+
+  // If Supabase is configured and the user isn't logged in, show Auth
+  if (supabase && !user) {
+    return <Auth onLogin={() => window.location.reload()} />;
   }
 
   // ── WELCOME ────────────────────────────────────────────
@@ -1064,7 +1058,8 @@ export default function MathLock() {
           </div>
           {quizSet.length > 0 ? (
             <>
-              <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "20px 16px", marginBottom: 14, textAlign: "center" }}>
+              <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "20px 16px", marginBottom: 14, textAlign: "center", position: "relative" }}>
+                <button onClick={() => playAudio(quizSet[quizIdx].q)} title="Listen" style={{ position: "absolute", top: 12, right: 12, background: "transparent", border: "none", cursor: "pointer", fontSize: 16, padding: 4 }}>🔊</button>
                 <div style={{ fontSize: 10, color: C.muted, letterSpacing: "2px", marginBottom: 8 }}>WHAT IS THIS FORMULA?</div>
                 <div style={{ fontSize: 17, fontWeight: 900, color: C.yellow, lineHeight: 1.4 }}>{quizSet[quizIdx].q}</div>
               </div>
@@ -1076,7 +1071,8 @@ export default function MathLock() {
                 style={{ width: "100%", background: C.surface2, border: `1px solid ${quizResult ? (quizResult === "correct" ? C.green : C.red) : C.border}`, borderRadius: 8, padding: "12px 14px", color: C.text, fontSize: 14, fontFamily: "monospace", outline: "none", boxSizing: "border-box", marginBottom: 10 }}
               />
               {quizResult && (
-                <div style={{ padding: "12px 14px", borderRadius: 8, background: quizResult === "correct" ? "rgba(57,255,122,.1)" : "rgba(255,51,102,.1)", border: `1px solid ${quizResult === "correct" ? C.green : C.red}`, marginBottom: 10, fontSize: 12 }}>
+                <div style={{ padding: "12px 14px", borderRadius: 8, background: quizResult === "correct" ? "rgba(57,255,122,.1)" : "rgba(255,51,102,.1)", border: `1px solid ${quizResult === "correct" ? C.green : C.red}`, marginBottom: 10, fontSize: 12, position: "relative" }}>
+                  <button onClick={() => playAudio(quizSet[quizIdx].a)} title="Listen to Answer" style={{ position: "absolute", top: 12, right: 12, background: "transparent", border: "none", cursor: "pointer", fontSize: 16, padding: 4 }}>🔊</button>
                   <div style={{ fontWeight: 900, color: quizResult === "correct" ? C.green : C.red, marginBottom: 4 }}>{quizResult === "correct" ? "✅ CORRECT!" : "❌ NOT QUITE"}</div>
                   <div style={{ color: C.muted }}>Answer: <span style={{ color: C.text, fontFamily: "monospace" }}>{quizSet[quizIdx].a}</span></div>
                 </div>
@@ -1103,19 +1099,7 @@ export default function MathLock() {
       {activeTab === "checker" && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 900, marginBottom: 4 }}>🤖 AI ANSWER CHECKER</div>
-          <div style={{ fontSize: 11, color: C.muted, marginBottom: 12 }}>Write any question + your answer. AI will check it and give detailed feedback.</div>
-
-          <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 10, letterSpacing: "2px", color: C.muted, marginBottom: 5, fontWeight: 700 }}>YOUR ANTHROPIC API KEY <span style={{ color: C.red }}>*</span></div>
-            <input
-              value={apiKey}
-              onChange={e => { setApiKey(e.target.value); saveState("ml_apikey", e.target.value); }}
-              placeholder="sk-ant-api03-..."
-              type="password"
-              style={{ width: "100%", background: C.surface2, border: `1px solid ${apiKey ? "#39ff7a" : C.border}`, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 12, fontFamily: "monospace", outline: "none", boxSizing: "border-box", marginBottom: 4 }}
-            />
-            <div style={{ fontSize: 10, color: C.muted, lineHeight: 1.5 }}>Get your key at <strong style={{ color: C.yellow }}>console.anthropic.com</strong> → API Keys. It's saved locally on your device only.</div>
-          </div>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 12 }}>Write any question + your answer. AI will check it and give detailed feedback. Powered by Groq.</div>
 
           <div style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 10, letterSpacing: "2px", color: C.muted, marginBottom: 6, fontWeight: 700 }}>QUESTION</div>
@@ -1137,10 +1121,32 @@ export default function MathLock() {
               style={{ width: "100%", background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 12px", color: C.text, fontSize: 13, fontFamily: "system-ui", outline: "none", resize: "vertical", boxSizing: "border-box" }}
             />
           </div>
-          <button onClick={runChecker} disabled={checkerLoading || !checkerQ || !checkerA}
-            style={{ width: "100%", background: checkerLoading ? "rgba(240,192,64,.4)" : C.yellow, color: "#000", border: "none", padding: "13px", borderRadius: 8, fontWeight: 900, cursor: "pointer", fontSize: 14, marginBottom: 14 }}>
-            {checkerLoading ? "🤖 Checking your answer..." : "🤖 CHECK MY ANSWER"}
-          </button>
+          <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+            <button onClick={async () => {
+              if (!checkerQ || !checkerA) return alert("Please fill both Question and your Answer.");
+              setCheckerLoading(true); setCheckerRes(null);
+              try {
+                const r = await checkAnswerWithAI(checkerQ, checkerA, day.chapter, "check");
+                setCheckerRes(r);
+              } catch (e) { alert("AI Error: " + e.message); }
+              setCheckerLoading(false);
+            }} disabled={checkerLoading || !checkerQ || !checkerA}
+              style={{ flex: 2, background: checkerLoading ? "rgba(240,192,64,.4)" : C.yellow, color: "#000", border: "none", padding: "13px", borderRadius: 8, fontWeight: 900, cursor: "pointer", fontSize: 14 }}>
+              {checkerLoading ? "🤖 Checking..." : "🤖 CHECK ANSWER"}
+            </button>
+            <button onClick={async () => {
+              if (!checkerQ || !checkerA) return alert("Please fill both Question and your Answer.");
+              setCheckerLoading(true); setCheckerRes(null);
+              try {
+                const r = await checkAnswerWithAI(checkerQ, checkerA, day.chapter, "hint");
+                setCheckerRes(r);
+              } catch (e) { alert("AI Error: " + e.message); }
+              setCheckerLoading(false);
+            }} disabled={checkerLoading || !checkerQ || !checkerA}
+              style={{ flex: 1, background: "transparent", color: C.yellow, border: `1px solid ${C.yellow}`, padding: "13px", borderRadius: 8, fontWeight: 900, cursor: "pointer", fontSize: 14 }}>
+              💡 GET HINT
+            </button>
+          </div>
 
           {checkerRes && (
             <div style={{ background: checkerRes.correct ? "rgba(57,255,122,.08)" : "rgba(255,51,102,.08)", border: `1px solid ${checkerRes.correct ? C.green : C.red}`, borderRadius: 10, padding: "16px 14px" }}>
@@ -1150,11 +1156,22 @@ export default function MathLock() {
               </div>
               <div style={{ fontSize: 12, color: C.text, marginBottom: 8, fontWeight: 700 }}>{checkerRes.verdict}</div>
               {checkerRes.what_is_right && <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}><strong style={{ color: C.green }}>✓ Right:</strong> {checkerRes.what_is_right}</div>}
-              {checkerRes.mistakes !== "None" && <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}><strong style={{ color: C.red }}>✗ Mistake:</strong> {checkerRes.mistakes}</div>}
+              {checkerRes.mistakes !== "None" && (() => {
+                const match = checkerRes.mistakes.match(/^\[(.*?)\]\s*(.*)/);
+                const tag = match ? match[1] : null;
+                const desc = match ? match[2] : checkerRes.mistakes;
+                const tagColor = tag === "CALCULATION ERROR" ? C.orange : tag === "FORMULA ERROR" ? C.blue : tag === "CONCEPT ERROR" ? C.red : C.red;
+                return (
+                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 6, lineHeight: 1.5 }}>
+                    {match ? <strong style={{ color: tagColor, background: `${tagColor}22`, padding: "2px 6px", borderRadius: 4, marginRight: 6 }}>{tag}</strong> : <strong style={{ color: C.red }}>✗ Mistake:</strong>}
+                    {desc}
+                  </div>
+                );
+              })()}
               <div style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}><strong style={{ color: C.blue }}>Correct approach:</strong> {checkerRes.correct_approach}</div>
               <div style={{ fontSize: 11, background: "rgba(240,192,64,.1)", border: `1px solid rgba(240,192,64,.2)`, padding: "8px 10px", borderRadius: 6, color: C.yellow }}>💡 {checkerRes.tip}</div>
               {!checkerRes.correct && (
-                <button onClick={() => setMistakes(prev => [{ id: Date.now(), text: `Q: ${checkerQ} | Mistake: ${checkerRes.mistakes}`, chapter: day.chapter, day: currentDay + 1, date: new Date().toLocaleDateString() }, ...prev])}
+                <button onClick={() => setMistakes(prev => [{ id: Date.now(), text: `Q: ${checkerQ} | Mistake: ${checkerRes.mistakes}`, chapter: day.chapter, day: currentDay + 1, date: new Date().toLocaleDateString(), reviewCount: 0, nextReviewDate: Date.now() + 86400000 }, ...prev])}
                   style={{ marginTop: 10, width: "100%", background: "transparent", border: `1px solid ${C.border}`, color: C.muted, padding: "8px", borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
                   📝 Save to Mistake Notebook
                 </button>
@@ -1184,20 +1201,30 @@ export default function MathLock() {
           {mistakes.length === 0 ? (
             <div style={{ textAlign: "center", color: C.muted, padding: "24px 0", fontSize: 13 }}>No mistakes saved yet. Great job — or start adding them! 😄</div>
           ) : (
-            <div style={{ maxHeight: 340, overflowY: "auto" }}>
-              {mistakes.map(m => (
-                <div key={m.id} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 8, padding: "12px 14px", marginBottom: 8 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                    <div>
-                      <span style={{ fontSize: 9, background: "rgba(255,51,102,.15)", color: C.red, padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginRight: 6 }}>Day {m.day}</span>
-                      <span style={{ fontSize: 9, color: C.muted }}>{m.date}</span>
+            <div style={{ maxHeight: 340, overflowY: "auto", position: "relative" }}>
+              {mistakes.map(m => {
+                const due = m.nextReviewDate && m.nextReviewDate <= Date.now();
+                return (
+                  <div key={m.id} style={{ background: C.surface2, border: `1px solid ${due ? C.red : C.border}`, borderRadius: 8, padding: "12px 14px", marginBottom: 12, position: "relative" }}>
+                    {due && <div style={{ position: "absolute", top: -8, right: 10, background: C.red, color: "#fff", fontSize: 9, padding: "2px 6px", borderRadius: 4, fontWeight: 900 }}>DUE TO REVIEW</div>}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                      <div>
+                        <span style={{ fontSize: 9, background: "rgba(255,51,102,.15)", color: C.red, padding: "2px 8px", borderRadius: 10, fontWeight: 700, marginRight: 6 }}>Day {m.day}</span>
+                        <span style={{ fontSize: 9, color: C.muted }}>{m.date}</span>
+                      </div>
+                      <button onClick={() => deleteMistake(m.id)} style={{ background: "transparent", border: "none", color: C.muted, cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>
                     </div>
-                    <button onClick={() => deleteMistake(m.id)} style={{ background: "transparent", border: "none", color: C.muted, cursor: "pointer", fontSize: 14, padding: 0 }}>✕</button>
+                    <div style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}>{m.text}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontSize: 10, color: C.muted, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginRight: 8 }}>{m.chapter}</div>
+                      <button onClick={() => setMistakes(prev => prev.map(x => x.id === m.id ? { ...x, reviewCount: (x.reviewCount || 0) + 1, nextReviewDate: Date.now() + (Math.pow(2, (x.reviewCount || 0) + 1) * 86400000) } : x))}
+                        style={{ background: due ? C.red : "transparent", color: due ? "#fff" : C.muted, border: `1px solid ${due ? C.red : C.border}`, padding: "6px 10px", borderRadius: 6, cursor: "pointer", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
+                        {due ? "MARK REVIEWED" : `Reviewed ${(m.reviewCount || 0)}x`}
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 4 }}>{m.text}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>{m.chapter}</div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>
