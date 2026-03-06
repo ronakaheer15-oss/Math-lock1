@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 const ROADMAP = [
   {
     topic: "Real Numbers", sub: "Euclid's Division & Fundamental Theorem",
-    chapter: "Chapter 1 — Real Numbers",
+    chapter: "Ch 1 — Real Numbers (TS SSC)",
     whatToStudy: [
       "Euclid's Division Lemma: For any two positive integers a and b, a = bq + r where 0 ≤ r < b",
       "Euclid's Division Algorithm (to find HCF step by step)",
@@ -36,8 +36,43 @@ const ROADMAP = [
     ]
   },
   {
+    topic: "Sets", sub: "Types, Operations & Venn Diagrams",
+    chapter: "Ch 2 — Sets (TS SSC)",
+    whatToStudy: [
+      "Set definition: a well-defined collection of objects",
+      "Representation: Roster (listing) and Set-Builder (rule) form",
+      "Types: Empty set (∅), Finite, Infinite, Equal sets, Subsets",
+      "Universal set (U), Complement of a set (A')",
+      "Operations: Union (A∪B), Intersection (A∩B), Difference (A-B)",
+      "Venn Diagrams for all operations",
+      "n(A∪B) = n(A) + n(B) - n(A∩B)"
+    ],
+    problems: [
+      "If A={1,2,3,4,5} and B={3,4,5,6,7}, find A∪B, A∩B, A-B",
+      "Draw Venn diagrams for A∪B and A∩B where A={2,4,6,8} and B={4,8,12}",
+      "If n(A)=20, n(B)=15, n(A∩B)=8, find n(A∪B)",
+      "If U={1,2,...,10}, A={1,3,5,7,9}, find A'",
+      "In a class of 40, 25 play cricket, 20 play football, 10 play both. Find: only cricket, only football, neither."
+    ],
+    formulas: [
+      "n(A∪B) = n(A) + n(B) - n(A∩B)",
+      "A' = U - A (complement)",
+      "A-B = A ∩ B' (set difference)"
+    ],
+    recallTask: [
+      "Write all set operation symbols and their meanings from memory",
+      "Draw Venn diagrams for Union, Intersection, Difference — no book",
+      "Solve blind: n(A)=30, n(B)=25, n(A∪B)=45, find n(A∩B)"
+    ],
+    quizFormulas: [
+      { q: "n(A∪B) = ?", a: "n(A) + n(B) - n(A∩B)" },
+      { q: "A' (complement) = ?", a: "U - A" },
+      { q: "A-B = ?", a: "A ∩ B'" }
+    ]
+  },
+  {
     topic: "Polynomials", sub: "Zeros, Relationships & Division Algorithm",
-    chapter: "Chapter 2 — Polynomials",
+    chapter: "Ch 3 — Polynomials (TS SSC)",
     whatToStudy: [
       "Geometric meaning of zeros — where graph cuts x-axis",
       "For quadratic ax²+bx+c: Sum of zeros = -b/a, Product of zeros = c/a",
@@ -71,7 +106,7 @@ const ROADMAP = [
   },
   {
     topic: "Linear Equations", sub: "Pair of Linear Equations — All 3 Methods",
-    chapter: "Chapter 3 — Pair of Linear Equations in Two Variables",
+    chapter: "Ch 4 — Pair of Linear Equations (TS SSC)",
     whatToStudy: [
       "Graphical method: intersection point = solution",
       "Substitution method: express one variable from one equation, substitute in other",
@@ -104,7 +139,7 @@ const ROADMAP = [
   },
   {
     topic: "Quadratic Equations", sub: "Factorisation, Formula & Nature of Roots",
-    chapter: "Chapter 4 — Quadratic Equations",
+    chapter: "Ch 5 — Quadratic Equations (TS SSC)",
     whatToStudy: [
       "Standard form: ax²+bx+c=0",
       "Method 1: Factorisation — split middle term",
@@ -136,8 +171,8 @@ const ROADMAP = [
     ]
   },
   {
-    topic: "Arithmetic Progressions", sub: "nth Term, Sum & Word Problems",
-    chapter: "Chapter 5 — Arithmetic Progressions",
+    topic: "Progressions", sub: "AP — nth Term, Sum & Word Problems",
+    chapter: "Ch 6 — Progressions (TS SSC)",
     whatToStudy: [
       "AP definition: constant difference 'd' between consecutive terms",
       "General form: a, a+d, a+2d, ...",
@@ -170,9 +205,9 @@ const ROADMAP = [
     ]
   },
   {
-    topic: "🔁 REVISION DAY", sub: "Algebra Chapters 1-5 Full Recall",
-    chapter: "Chapters 1–5 — Full Revision",
-    whatToStudy: ["Review all formulas from Ch1-5", "Focus only on questions you got wrong", "Do NOT re-read theory — only solve"],
+    topic: "🔁 REVISION DAY", sub: "Algebra & Sets — Ch 1-6 Full Recall",
+    chapter: "Ch 1–6 — Full Revision (TS SSC)",
+    whatToStudy: ["Review all formulas from Ch 1-6", "Include Sets operations & Venn diagrams", "Focus only on questions you got wrong", "Do NOT re-read theory — only solve"],
     problems: [
       "Find HCF(26,91) and LCM(26,91) — verify HCF×LCM = product",
       "Find zeros of 4s²-4s+1 and verify sum/product",
@@ -189,8 +224,8 @@ const ROADMAP = [
     ]
   },
   {
-    topic: "Triangles", sub: "Similarity Criteria & BPT",
-    chapter: "Chapter 6 — Triangles",
+    topic: "Similar Triangles", sub: "Similarity Criteria & BPT",
+    chapter: "Ch 8 — Similar Triangles (TS SSC)",
     whatToStudy: [
       "BPT: Line || to one side divides other two sides proportionally",
       "Converse of BPT",
@@ -223,7 +258,7 @@ const ROADMAP = [
   },
   {
     topic: "Coordinate Geometry", sub: "Distance, Section & Area Formulas",
-    chapter: "Chapter 7 — Coordinate Geometry",
+    chapter: "Ch 7 — Coordinate Geometry (TS SSC)",
     whatToStudy: [
       "Distance formula: d = √[(x2-x1)² + (y2-y1)²]",
       "Section formula: [(mx2+nx1)/(m+n), (my2+ny1)/(m+n)]",
@@ -256,8 +291,8 @@ const ROADMAP = [
     ]
   },
   {
-    topic: "Introduction to Trigonometry", sub: "Ratios, Identities & Standard Angles",
-    chapter: "Chapter 8 — Introduction to Trigonometry",
+    topic: "Trigonometry", sub: "Ratios, Identities & Standard Angles",
+    chapter: "Ch 11 — Trigonometry (TS SSC)",
     whatToStudy: [
       "6 ratios: sinθ=P/H, cosθ=B/H, tanθ=P/B, cosecθ=H/P, secθ=H/B, cotθ=B/P",
       "Reciprocal: cosec=1/sin, sec=1/cos, cot=1/tan",
@@ -292,7 +327,7 @@ const ROADMAP = [
   },
   {
     topic: "Trigonometry Applications", sub: "Heights and Distances",
-    chapter: "Chapter 9 — Some Applications of Trigonometry",
+    chapter: "Ch 12 — Applications of Trigonometry (TS SSC)",
     whatToStudy: [
       "Angle of elevation: from horizontal UP to object",
       "Angle of depression: from horizontal DOWN to object",
@@ -324,8 +359,8 @@ const ROADMAP = [
     ]
   },
   {
-    topic: "🔁 REVISION DAY", sub: "Geometry + Trig Full Recall (Ch 6-9)",
-    chapter: "Chapters 6–9 Full Revision",
+    topic: "🔁 REVISION DAY", sub: "Geometry + Trig Full Recall",
+    chapter: "Ch 7,8,11,12 — Full Revision (TS SSC)",
     whatToStudy: ["All similarity criteria + BPT proofs", "All coord geometry formulas", "Full trig table + identities", "Heights & distances diagrams"],
     problems: [
       "Prove BPT theorem — full proof with diagram",
@@ -343,8 +378,8 @@ const ROADMAP = [
     ]
   },
   {
-    topic: "Circles", sub: "Tangents — Properties & Proofs",
-    chapter: "Chapter 10 — Circles",
+    topic: "Tangents & Secants to a Circle", sub: "Tangent Properties & Proofs",
+    chapter: "Ch 9 — Tangents & Secants (TS SSC)",
     whatToStudy: [
       "Tangent touches circle at exactly one point",
       "Theorem 1: Tangent ⊥ radius at point of contact",
@@ -377,109 +412,47 @@ const ROADMAP = [
     ]
   },
   {
-    topic: "Constructions", sub: "Line Division & Tangent Constructions",
-    chapter: "Chapter 11 — Constructions",
+    topic: "Mensuration", sub: "Areas, Surface Areas & Volumes",
+    chapter: "Ch 10 — Mensuration (TS SSC)",
     whatToStudy: [
-      "Dividing line segment in ratio m:n",
-      "Constructing triangle similar to given (scale factor)",
-      "Tangent to circle from external point",
-      "Write clear steps for every construction"
-    ],
-    problems: [
-      "Divide AB=8cm in ratio 3:2 — write all steps",
-      "Construct triangle 6,8,10cm. Then similar with scale factor 3/4",
-      "Circle r=4cm. From point 7cm from centre, draw two tangents. Verify.",
-      "Triangle BC=7cm, ∠B=45°, ∠A=105°. Similar with scale 4/3",
-      "Tangents to circle r=5cm inclined at 60° to each other"
-    ],
-    formulas: [
-      "Scale factor < 1 → smaller triangle",
-      "Scale factor > 1 → larger triangle",
-      "Tangent from external: join centre → midpoint → semicircle → intersections"
-    ],
-    recallTask: [
-      "Write steps for dividing segment in ratio 3:5 — from memory",
-      "Write steps for tangent from external point — from memory",
-      "Draw triangle and construct similar with scale 2/3 — no textbook"
-    ],
-    quizFormulas: [
-      { q: "Scale factor < 1 means?", a: "New triangle is smaller than original" },
-      { q: "Scale factor > 1 means?", a: "New triangle is larger than original" },
-      { q: "How many tangents from external point?", a: "2" },
-    ]
-  },
-  {
-    topic: "Areas Related to Circles", sub: "Sector, Segment & Combinations",
-    chapter: "Chapter 12 — Areas Related to Circles",
-    whatToStudy: [
-      "Area of circle = πr², Circumference = 2πr",
-      "Area of sector = (θ/360)×πr²",
-      "Arc length = (θ/360)×2πr",
+      "Area of sector = (θ/360)×πr², Arc length = (θ/360)×2πr",
       "Area of segment = sector area - triangle area",
-      "Combination figures: add/subtract areas carefully"
-    ],
-    problems: [
-      "Sector: radius=4cm, angle=30°. Find area.",
-      "Segment: radius=12cm, angle=120°. Find area.",
-      "Horse tied to corner of square (15m side) with 5m rope. Find grazing area.",
-      "Ring between concentric circles r=8cm and r=6cm.",
-      "Square (14cm side) with semicircles inside on each side. Find remaining area."
-    ],
-    formulas: [
-      "Area of sector = (θ/360) × πr²",
-      "Arc length = (θ/360) × 2πr",
-      "Area of minor segment = sector - triangle",
-      "Area of major segment = πr² - minor segment"
-    ],
-    recallTask: [
-      "Write all 4 circle area formulas from memory",
-      "Solve blind: r=7cm, θ=90°. Area of sector.",
-      "Solve blind: r=6cm, θ=60°. Area of segment. (Triangle is equilateral here)"
-    ],
-    quizFormulas: [
-      { q: "Area of sector", a: "(θ/360) × πr²" },
-      { q: "Arc length", a: "(θ/360) × 2πr" },
-      { q: "Area of minor segment", a: "Area of sector - Area of triangle" },
-    ]
-  },
-  {
-    topic: "Surface Areas & Volumes", sub: "Combination of Solids & Conversion",
-    chapter: "Chapter 13 — Surface Areas and Volumes",
-    whatToStudy: [
       "Cylinder: CSA=2πrh, TSA=2πr(h+r), V=πr²h",
       "Cone: CSA=πrl, TSA=πr(l+r), V=⅓πr²h, l=√(r²+h²)",
       "Sphere: SA=4πr², V=⁴⁄₃πr³",
       "Hemisphere: CSA=2πr², TSA=3πr², V=⅔πr³",
-      "Combined solids: add volumes; for SA, exclude joined faces"
+      "Combined solids: add volumes but exclude joined faces for SA"
     ],
     problems: [
+      "Sector: r=7cm, θ=90°. Find area and arc length.",
       "Hemisphere on cylinder, r=7cm, h=13cm. Find TSA.",
       "Cone (h=24cm, r=6cm) melted into sphere. Find sphere radius.",
-      "Toy: cone on hemisphere, r=3.5cm, cone h=12cm. Find SA.",
-      "How many balls (r=0.5cm) from sphere (r=4.5cm)?",
-      "Cylinder tank (r=7m, h=2m) emptied into conical tank (r=7m, h=3m). % filled?"
+      "Horse tied to corner of square (15m side) with 5m rope. Find grazing area.",
+      "How many balls (r=0.5cm) from sphere (r=4.5cm)?"
     ],
     formulas: [
+      "Area of sector = (θ/360) × πr²",
+      "Arc length = (θ/360) × 2πr",
       "Cylinder: V=πr²h, TSA=2πr(r+h)",
-      "Cone: V=⅓πr²h, CSA=πrl, l=√(r²+h²)",
+      "Cone: V=⅓πr²h, l=√(r²+h²)",
       "Sphere: V=⁴⁄₃πr³, SA=4πr²",
-      "Hemisphere: V=⅔πr³, CSA=2πr², TSA=3πr²"
+      "Hemisphere: V=⅔πr³, TSA=3πr²"
     ],
     recallTask: [
-      "Write ALL formulas for all 4 solids from memory on one page",
-      "Solve blind: Sphere r=3cm melted into cylinder r=3cm. Find cylinder height.",
-      "Solve blind: TSA of hemisphere r=10.5cm"
+      "Write ALL sector + solid formulas on one page from memory",
+      "Solve blind: Sphere r=3cm melted into cylinder r=3cm. Find height.",
+      "Solve blind: r=6cm, θ=60°. Find area of segment."
     ],
     quizFormulas: [
+      { q: "Area of sector", a: "(θ/360) × πr²" },
       { q: "Volume of cone", a: "⅓πr²h" },
       { q: "Volume of sphere", a: "⁴⁄₃πr³" },
-      { q: "TSA of hemisphere", a: "3πr²" },
     ]
   },
   {
-    topic: "🔁 BIG REVISION", sub: "Ch 10-13 Full Recall",
-    chapter: "Chapters 10–13 Full Revision",
-    whatToStudy: ["All circle theorems and proofs", "Construction steps", "All area and volume formulas"],
+    topic: "🔁 BIG REVISION", sub: "Ch 9-10 Full Recall",
+    chapter: "Ch 9-10 — Full Revision (TS SSC)",
+    whatToStudy: ["All tangent theorems and proofs", "All sector/segment formulas", "All solid SA and volume formulas"],
     problems: [
       "Prove tangents from external point are equal",
       "Sector: r=21cm, θ=120°. Find area.",
@@ -497,7 +470,7 @@ const ROADMAP = [
   },
   {
     topic: "Statistics", sub: "Mean, Median & Mode — Grouped Data",
-    chapter: "Chapter 14 — Statistics",
+    chapter: "Ch 14 — Statistics (TS SSC)",
     whatToStudy: [
       "Mean (direct): x̄ = Σfx/Σf",
       "Mean (assumed mean): x̄ = a + Σfd/Σf  (d=x-a)",
@@ -532,7 +505,7 @@ const ROADMAP = [
   },
   {
     topic: "Probability", sub: "Classical Probability & Key Problems",
-    chapter: "Chapter 15 — Probability",
+    chapter: "Ch 13 — Probability (TS SSC)",
     whatToStudy: [
       "P(E) = favourable outcomes / total outcomes",
       "P(E) + P(Ē) = 1",
@@ -566,7 +539,7 @@ const ROADMAP = [
   },
   {
     topic: "📝 MOCK EXAM 1", sub: "Full 3-Hour Board Paper",
-    chapter: "Full Syllabus — All 15 Chapters",
+    chapter: "Full Syllabus — All 14 Chapters (TS SSC)",
     whatToStudy: ["Start 9:30 AM — real exam conditions", "Phone away. Only pen and blank paper.", "Attempt all sections"],
     problems: [
       "Section A (1 mark): HCF(135,225) | zeros of x²-2x-8 | D of 2x²-4x+3 | sin²45°+cos²45° | P(king)",
@@ -604,7 +577,7 @@ const ROADMAP = [
   },
   {
     topic: "📝 MOCK EXAM 2", sub: "Beat Mock 1 Score",
-    chapter: "Full Syllabus — All 15 Chapters",
+    chapter: "Full Syllabus — All 14 Chapters (TS SSC)",
     whatToStudy: ["Full exam — same conditions as Mock 1", "Focus on time management", "Section A first, Section D last"],
     problems: [
       "Section A: LCM(12,15,21) | Sum of zeros 3x²-5 | Roots x²+4x+5 | tan60°.sin30° | P(multiple of 3) from 1-15",
@@ -623,7 +596,7 @@ const ROADMAP = [
   },
   {
     topic: "🎯 FINAL DAY", sub: "Formula Consolidation + Mental Prep",
-    chapter: "Light revision — all 15 chapters",
+    chapter: "Light revision — all 14 chapters (TS SSC)",
     whatToStudy: ["DO NOT study new topics", "Write every formula on ONE page", "Trust your 22 days of hard work", "Sleep by 10 PM"],
     problems: [
       "Formula sheet: write ALL formulas for all 15 chapters (~30 min)",
@@ -686,8 +659,8 @@ function saveState(key, value) { try { localStorage.setItem(key, JSON.stringify(
 
 function Modal({ children, borderColor = "#2a2a3a" }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.93)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
-      <div style={{ background: C.surface, border: `1px solid ${borderColor}`, borderRadius: 16, padding: "28px 22px", maxWidth: 420, width: "100%", textAlign: "center", fontFamily: "system-ui,sans-serif", color: C.text, maxHeight: "90vh", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.93)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px 12px", overflowY: "auto" }}>
+      <div style={{ background: C.surface, border: `1px solid ${borderColor}`, borderRadius: 16, padding: "24px 16px", maxWidth: 420, width: "100%", textAlign: "center", fontFamily: "'Inter',system-ui,sans-serif", color: C.text, maxHeight: "90vh", overflowY: "auto" }}>
         {children}
       </div>
     </div>
@@ -707,15 +680,23 @@ function Section({ title, color, children }) {
 
 // ─── AI ANSWER CHECKER ────────────────────────────────────────────────────
 async function checkAnswerWithAI(question, userAnswer, chapter, apiKey) {
+  if (!apiKey || !apiKey.startsWith("sk-ant-")) {
+    throw new Error("Invalid API key. It should start with sk-ant-");
+  }
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "x-api-key": apiKey, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-3-5-sonnet-20241022",
       max_tokens: 1000,
       messages: [{
         role: "user",
-        content: `You are a 10th class Mathematics teacher checking a student's answer.
+        content: `You are a 10th class SSC Telangana Mathematics teacher checking a student's answer.
 
 Chapter: ${chapter}
 Question: ${question}
@@ -734,6 +715,13 @@ Check if the student's answer is correct. Respond in this exact JSON format only
       }]
     })
   });
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    if (response.status === 401) throw new Error("Invalid API key. Please check your key at console.anthropic.com");
+    if (response.status === 429) throw new Error("Rate limited. Please wait a moment and try again.");
+    if (response.status === 400) throw new Error(errData?.error?.message || "Bad request. Please try a shorter question.");
+    throw new Error(errData?.error?.message || `API error (${response.status})`);
+  }
   const data = await response.json();
   const text = data.content.map(i => i.text || "").join("");
   const clean = text.replace(/```json|```/g, "").trim();
@@ -785,7 +773,7 @@ export default function MathLock() {
 
   const day = ROADMAP[currentDay];
   const myTasks = doneTasks[`day_${currentDay}`] || [];
-  const progress = Math.round((doneDays.length / 23) * 100);
+  const progress = Math.round((doneDays.length / ROADMAP.length) * 100);
   const circ = 2 * Math.PI * 48;
   const phaseFrac = 1 - timeLeft / PHASES[phase].duration;
 
@@ -862,11 +850,15 @@ export default function MathLock() {
 
   async function runChecker() {
     if (!checkerQ.trim() || !checkerA.trim()) return;
+    if (!apiKey) { setCheckerRes({ correct: false, score: "?/10", verdict: "No API key provided", mistakes: "Missing API key", correct_approach: "Enter your Anthropic API key above", tip: "Get your key at console.anthropic.com → API Keys", what_is_right: "" }); return; }
     setCheckerLoading(true); setCheckerRes(null);
     try {
       const res = await checkAnswerWithAI(checkerQ, checkerA, day.chapter, apiKey);
       setCheckerRes(res);
-    } catch (e) { setCheckerRes({ correct: false, score: "?/10", verdict: "Could not check — try again", mistakes: "API error", correct_approach: "", tip: "Please try again", what_is_right: "" }); }
+    } catch (e) {
+      const msg = e.message || "Unknown error";
+      setCheckerRes({ correct: false, score: "?/10", verdict: "Could not check — try again", mistakes: msg, correct_approach: "Make sure your API key is valid and has credits", tip: "If the error persists, check your API key at console.anthropic.com", what_is_right: "" });
+    }
     setCheckerLoading(false);
   }
 
@@ -892,15 +884,15 @@ export default function MathLock() {
 
   // ── WELCOME ────────────────────────────────────────────
   if (screen === "welcome") return (
-    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px", fontFamily: "system-ui,sans-serif", color: C.text, textAlign: "center" }}>
+    <div style={{ minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 16px", fontFamily: "'Inter',system-ui,sans-serif", color: C.text, textAlign: "center", width: "100%", maxWidth: "100vw", overflow: "hidden" }}>
       <div style={{ background: C.yellow, color: "#000", fontSize: "10px", fontWeight: 900, letterSpacing: "4px", padding: "5px 16px", borderRadius: 2, marginBottom: 24 }}>MATHLOCK v3.0</div>
-      <h1 style={{ fontSize: "clamp(48px,13vw,84px)", fontWeight: 900, lineHeight: .88, marginBottom: 14 }}>STUDY.<br /><span style={{ color: C.yellow }}>NO</span> ESCAPE.</h1>
+      <h1 style={{ fontSize: "clamp(36px,11vw,84px)", fontWeight: 900, lineHeight: .88, marginBottom: 14 }}>STUDY.<br /><span style={{ color: C.yellow }}>NO</span> ESCAPE.</h1>
       <p style={{ color: C.muted, fontSize: "11px", letterSpacing: "3px", marginBottom: 28, fontFamily: "monospace" }}>// AI-powered guided study system //</p>
 
-      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderLeft: `4px solid ${C.orange}`, padding: "18px 36px", borderRadius: 8, marginBottom: 24 }}>
-        <div style={{ fontSize: 58, fontWeight: 900, color: C.orange, lineHeight: 1 }}>{getDaysLeft()}</div>
+      <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderLeft: `4px solid ${C.orange}`, padding: "18px 24px", borderRadius: 8, marginBottom: 24, width: "100%", maxWidth: 340 }}>
+        <div style={{ fontSize: "clamp(40px,10vw,58px)", fontWeight: 900, color: C.orange, lineHeight: 1 }}>{getDaysLeft()}</div>
         <div style={{ color: C.muted, fontSize: "10px", letterSpacing: "3px", marginTop: 4 }}>DAYS UNTIL EXAM</div>
-        <div style={{ fontSize: 12, marginTop: 8 }}>📅 Mathematics Board Exam — 28 March 2026</div>
+        <div style={{ fontSize: 12, marginTop: 8 }}>📅 SSC Telangana Math — 28 March 2026</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24, width: "100%", maxWidth: 340 }}>
@@ -927,7 +919,7 @@ export default function MathLock() {
 
   // ── MAIN APP ───────────────────────────────────────────
   return (
-    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "system-ui,sans-serif", padding: 14, maxWidth: 540, margin: "0 auto", paddingBottom: 40 }}>
+    <div style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Inter',system-ui,sans-serif", padding: "12px 10px 40px", maxWidth: 540, margin: "0 auto", width: "100%" }}>
 
       {/* HEADER */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
@@ -943,7 +935,7 @@ export default function MathLock() {
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 8, padding: "10px 14px", marginBottom: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.muted, marginBottom: 5 }}>
           <span>PROGRESS</span>
-          <span style={{ color: C.yellow }}>{doneDays.length}/23 · {progress}%</span>
+          <span style={{ color: C.yellow }}>{doneDays.length}/{ROADMAP.length} · {progress}%</span>
         </div>
         <div style={{ height: 5, background: C.surface2, borderRadius: 3 }}>
           <div style={{ height: "100%", background: C.yellow, borderRadius: 3, width: `${progress}%`, transition: "width .5s" }} />
@@ -999,7 +991,7 @@ export default function MathLock() {
       {activeTab === "guide" && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 10, color: C.muted, letterSpacing: "2px", marginBottom: 3 }}>DAY {currentDay + 1} OF 23</div>
+            <div style={{ fontSize: 10, color: C.muted, letterSpacing: "2px", marginBottom: 3 }}>DAY {currentDay + 1} OF {ROADMAP.length}</div>
             <div style={{ fontSize: 17, fontWeight: 900, marginBottom: 2 }}>{day.topic}</div>
             <div style={{ fontSize: 12, color: C.yellow }}>📌 {day.chapter}</div>
           </div>
@@ -1214,7 +1206,7 @@ export default function MathLock() {
       {/* ── ROADMAP ── */}
       {activeTab === "roadmap" && (
         <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
-          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, fontSize: 10, fontWeight: 700, letterSpacing: "3px", color: C.muted }}>23-DAY ROADMAP</div>
+          <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, fontSize: 10, fontWeight: 700, letterSpacing: "3px", color: C.muted }}>{ROADMAP.length}-DAY ROADMAP</div>
           <div style={{ maxHeight: 420, overflowY: "auto", padding: 8 }}>
             {ROADMAP.map((d, i) => {
               const done = doneDays.includes(i), active = i === currentDay, score = dayScores[`day_${i}`];
@@ -1286,7 +1278,7 @@ export default function MathLock() {
           <div style={{ fontSize: 48, marginBottom: 10 }}>🎯</div>
           <h2 style={{ fontSize: 20, fontWeight: 900, marginBottom: 8 }}>DAY {currentDay + 1} COMPLETE!</h2>
           <p style={{ color: C.muted, fontSize: 12, lineHeight: 1.6, marginBottom: 20 }}>All recall tasks done + scored! Real memory built — not just recognition. Progress saved automatically!</p>
-          <button onClick={() => { setModal(null); if (currentDay < 22) setCurrentDay(d => d + 1); goPhase(0); setPhaseDone([]); setActiveTab("guide"); setCheckerQ(""); setCheckerA(""); setCheckerRes(null); setQuizDone([]); setQuizIdx(0); }}
+          <button onClick={() => { setModal(null); if (currentDay < ROADMAP.length - 1) setCurrentDay(d => d + 1); goPhase(0); setPhaseDone([]); setActiveTab("guide"); setCheckerQ(""); setCheckerA(""); setCheckerRes(null); setQuizDone([]); setQuizIdx(0); }}
             style={{ width: "100%", background: C.green, color: "#000", border: "none", padding: 14, borderRadius: 8, fontWeight: 900, cursor: "pointer", fontSize: 14, marginBottom: 8 }}>→ NEXT DAY</button>
           <button onClick={() => setModal(null)} style={{ width: "100%", background: "transparent", color: C.muted, border: `1px solid ${C.border}`, padding: 11, borderRadius: 8, cursor: "pointer", fontSize: 12 }}>STAY ON THIS DAY</button>
         </Modal>
