@@ -84,7 +84,10 @@ const speakText = (text, langCode = "en") => {
 };
 
 async function checkAnswerWithAI(problem, userAnswer, subject = "Mathematics", mode = "check", imageBase64 = null, language = "en") {
-  const apiKey = useStore.getState().apiKey;
+  const storeKey = useStore.getState().apiKey;
+  const envKey = import.meta.env.VITE_GROQ_API_KEY;
+  const apiKey = storeKey || envKey;
+
   if (!apiKey) throw new Error("Please add your Groq API Key in settings");
 
   let langStr = "English";
