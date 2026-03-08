@@ -40,9 +40,10 @@ export const useStore = create(
             absent: 0,
             mistakes: [],
             badges: [],
-            apiKey: "",
+            apiKey: import.meta.env.VITE_GROQ_API_KEY || "",
             lastLoginDate: new Date().toDateString(),
             voiceEnabled: true,
+            aiLanguage: "en",
 
             // Setters
             setScreen: setter(set, get, 'screen'),
@@ -55,6 +56,7 @@ export const useStore = create(
             setApiKey: setter(set, get, 'apiKey'),
             setLastLoginDate: setter(set, get, 'lastLoginDate'),
             setVoiceEnabled: setter(set, get, 'voiceEnabled'),
+            setAiLanguage: setter(set, get, 'aiLanguage'),
 
             // Helper to update current subject progress
             updateSubjectProgress: (subjectId, update) => {
@@ -112,6 +114,7 @@ export const useStore = create(
                                 absent: state.absent,
                                 mistakes: state.mistakes,
                                 badges: state.badges,
+                                aiLanguage: state.aiLanguage,
                                 lastLoginDate: state.lastLoginDate
                             };
                             supabase.from('user_progress').upsert({ id: user.id, app_state: toSync }).catch(console.error);

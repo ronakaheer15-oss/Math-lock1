@@ -60,52 +60,84 @@ function fmt(s) { return `${String(Math.floor(s / 60)).padStart(2, "0")}:${Strin
 
 
 
-const playAudio = (text) => {
+const speakText = (text, langCode = "en") => {
+  if (!window.speechSynthesis || !useStore.getState().voiceEnabled) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  const voices = window.speechSynthesis.getVoices();
 
-  if ('speechSynthesis' in window) {
+  let targetRegex = /en-/i;
+  if (langCode === "hi") targetRegex = /hi-/i;
+  if (langCode === "te") targetRegex = /te-/i;
 
-    window.speechSynthesis.cancel();
+  let v = voices.find(v => targetRegex.test(v.lang) && (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("Female")));
+  if (!v) v = voices.find(v => targetRegex.test(v.lang));
+  if (!v) v = voices.find(v => /en-/i.test(v.lang));
 
-    const u = new SpeechSynthesisUtterance(text);
-
+  if (v) u.voice = v;
+  if (langCode === "te") {
+    u.rate = 0.85; u.pitch = 1.0;
+  } else {
     u.rate = 0.9; u.pitch = 1.0;
-
-    window.speechSynthesis.speak(u);
-
   }
-
+  window.speechSynthesis.speak(u);
 };
 
-
-
-async function checkAnswerWithAI(problem, userAnswer, subject = "Mathematics", mode = "check") {
-
+async function checkAnswerWithAI(problem, userAnswer, subject = "Mathematics", mode = "check", imageBase64 = null, language = "en") {
   const apiKey = useStore.getState().apiKey;
+  if (!apiKey) throw new Error("Please add your Groq API Key in settings");
 
-  if (!apiKey) throw new Error("API Key missing");
+  let langStr = "English";
+  if (language === "hi") langStr = "Hindi";
+  if (language === "te") langStr = "Telugu";
 
   const prompt = mode === "check" ?
+    `Act as an expert ${subject} Teacher. The student is asking in ${langStr}. Respond entirely in ${langStr} (use native script).\nProblem: ${problem}\nStudent Answer/Image: ${userAnswer}\nProvide a detailed step-by-step explanation of how to solve it.\nCRITICAL: You MUST format your response as strict valid JSON without codeblocks.\nFormat exactly like this:\n{ "correct": true/false, "score": "x/10", "verdict": "Short summary in ${langStr}", "explain_step_by_step": "1. First step... 2. Second step... (in ${langStr})", "what_is_right": "...", "mistakes": "...", "correct_approach": "...", "tip": "..." }`
+    : `Give a subtle hint for this ${subject} problem in ${langStr}. Do NOT solve it.\nProblem: ${problem}\nStudent is stuck at: ${userAnswer}\nFormat response as JSON: { "verdict": "Hint: ... (in ${langStr})", "tip": "Try focusing on... (in ${langStr})" }`;
 
-    `Act as an expert ${subject} Teacher.\nProblem: ${problem}\nStudent Answer: ${userAnswer}\nCheck if correct. Provide score (x/10), feedback (max 2 sentences), what they did right vs wrong.\nFormat response as JSON: { "correct": boolean, "score": "x/10", "verdict": "Short summary", "what_is_right": "...", "mistakes": "[CATEGORY] description", "correct_approach": "...", "tip": "..." }`
+  let messages = [];
+  let modelToUse = "llama-3.3-70b-versatile";
 
-    : `Give a subtle hint for this ${subject} problem. Do NOT solve it.\nProblem: ${problem}\nStudent is stuck at: ${userAnswer}\nFormat response as JSON: { "verdict": "Hint: ...", "tip": "Try focusing on..." }`;
+  if (imageBase64) {
+    modelToUse = "llama-3.2-11b-vision-preview";
+    messages = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          { type: "image_url", image_url: { url: imageBase64 } }
+        ]
+      }
+    ];
+  } else {
+    messages = [{ role: "user", content: prompt }];
+  }
+
+  const payload = { model: modelToUse, messages: messages };
+  if (!imageBase64) {
+    payload.response_format = { type: "json_object" };
+  }
 
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-
     method: "POST",
-
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-
-    body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{ role: "user", content: prompt }], response_format: { type: "json_object" } })
-
+    body: JSON.stringify(payload)
   });
 
-  if (!response.ok) { const e = await response.json().catch(() => ({})); throw new Error(e?.error || `Server Error (${response.status})`); }
-
+  if (!response.ok) {
+    const e = await response.json().catch(() => ({}));
+    throw new Error(e?.error?.message || `Server Error (${response.status})`);
+  }
   const data = await response.json();
+  let contentStr = data.choices?.[0]?.message?.content || "{}";
 
-  return JSON.parse(data.choices?.[0]?.message?.content);
-
+  contentStr = contentStr.replace(/```json/g, "").replace(/```/g, "").trim();
+  try {
+    return JSON.parse(contentStr);
+  } catch (e) {
+    console.error("Failed to parse AI JSON:", contentStr);
+    throw new Error("AI returned invalid data format. Please try again.");
+  }
 }
 
 
@@ -204,6 +236,10 @@ export default function MathLock() {
 
   const setBadges = useStore(s => s.setBadges);
 
+  const aiLanguage = useStore(s => s.aiLanguage);
+
+  const setAiLanguage = useStore(s => s.setAiLanguage);
+
 
 
   const [phase, setPhase] = useState(0);
@@ -275,6 +311,8 @@ export default function MathLock() {
 
   const [checkerRes, setCheckerRes] = useState(null);
 
+  const [checkerImage, setCheckerImage] = useState(null);
+
   const [checkerLoading, setCheckerLoading] = useState(false);
 
   const [newMistake, setNewMistake] = useState("");
@@ -282,6 +320,22 @@ export default function MathLock() {
   const [mistakeChap, setMistakeChap] = useState("");
 
   const [pendingScore, setPendingScore] = useState(null);
+
+
+
+  const handleImageUpload = (e) => {
+
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => setCheckerImage(event.target.result);
+
+    reader.readAsDataURL(file);
+
+  };
 
 
 
@@ -1027,59 +1081,93 @@ export default function MathLock() {
       {/* AI CHECKER */}
 
       {activeTab === "checker" && (
+        <div className="glass scroll-reveal-scale" style={{ padding: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ padding: 10, background: "rgba(168,85,247,0.1)", borderRadius: 10, color: C.purple }}>🤖</div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 13, color: C.purple, letterSpacing: "1px" }}>AI TUTOR</div>
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Upload a photo or type to get step-by-step help.</div>
+              </div>
+            </div>
+            {/* Language Switcher */}
+            <div style={{ display: "flex", background: "rgba(0,0,0,0.3)", borderRadius: 6, padding: 2 }}>
+              {[{ id: "en", label: "EN" }, { id: "hi", label: "HI" }, { id: "te", label: "TE" }].map(lang => (
+                <button key={lang.id} onClick={() => setAiLanguage(lang.id)} style={{ background: aiLanguage === lang.id ? "rgba(255,255,255,0.15)" : "transparent", color: aiLanguage === lang.id ? "#fff" : C.muted, border: "none", padding: "4px 8px", fontSize: 11, fontWeight: 700, borderRadius: 4, cursor: "pointer" }}>{lang.label}</button>
+              ))}
+            </div>
+          </div>
 
-        <div className="glass scroll-reveal" style={{ padding: 18, animation: "fadeIn 0.3s ease" }}>
+          <input value={checkerQ} onChange={e => setCheckerQ(e.target.value)} placeholder="Type the problem question..." style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", padding: 12, borderRadius: 10, color: "#fff", marginBottom: 12, outline: "none", fontFamily: "inherit", fontSize: 13 }} />
 
-          <div style={{ fontSize: 14, fontWeight: 900, marginBottom: 4 }}>{"\ud83e\udd16"} AI ANSWER CHECKER</div>
+          <div style={{ position: "relative", marginBottom: 12 }}>
+            <textarea value={checkerA} onChange={e => setCheckerA(e.target.value)} placeholder="Type your answer, OR click the camera icon to upload a photo of your notebook..." style={{ width: "100%", height: 80, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", padding: "12px 40px 12px 12px", borderRadius: 10, color: "#fff", outline: "none", resize: "none", fontFamily: "inherit", fontSize: 13 }} />
 
-          <div style={{ fontSize: 11, color: C.muted, marginBottom: 14 }}>Powered by Groq &middot; {subjectMeta.name}</div>
+            {/* Camera Upload Button */}
+            <label style={{ position: "absolute", right: 10, bottom: 15, background: "rgba(168,85,247,0.2)", color: C.purple, padding: 8, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              📷
+              <input type="file" accept="image/*" capture="environment" onChange={handleImageUpload} style={{ display: "none" }} />
+            </label>
+          </div>
 
-          <textarea value={checkerQ} onChange={e => setCheckerQ(e.target.value)} placeholder="Question..." rows={2}
+          {checkerImage && (
+            <div style={{ position: "relative", marginBottom: 12, borderRadius: 10, overflow: "hidden", border: "1px solid rgba(168,85,247,0.3)" }}>
+              <img src={checkerImage} alt="Uploaded problem" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
+              <button onClick={() => setCheckerImage(null)} style={{ position: "absolute", top: 8, right: 8, background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: "50%", width: 24, height: 24, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>✕</button>
+            </div>
+          )}
 
-            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1.5px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px", color: C.text, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", marginBottom: 8, transition: "border-color 0.3s" }} />
-
-          <textarea value={checkerA} onChange={e => setCheckerA(e.target.value)} placeholder="Your Working..." rows={3}
-
-            style={{ width: "100%", background: "rgba(255,255,255,0.03)", border: "1.5px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "12px 14px", color: C.text, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box", marginBottom: 14, transition: "border-color 0.3s" }} />
-
-          <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-
-            <button onClick={async () => { setCheckerLoading(true); setCheckerRes(null); try { const r = await checkAnswerWithAI(checkerQ, checkerA, subjectMeta.name, "check"); setCheckerRes(r); } catch (e) { alert(e.message); } setCheckerLoading(false); }} disabled={checkerLoading || !checkerQ}
-
-              style={{ flex: 2, background: `linear-gradient(135deg, ${C.yellow}, #e6a820)`, color: "#000", border: "none", padding: 12, borderRadius: 10, fontWeight: 900, cursor: "pointer", fontSize: 13, opacity: (checkerLoading || !checkerQ) ? 0.5 : 1 }}>
-
-              {checkerLoading ? "\ud83e\udd16 Checking..." : "\ud83e\udd16 CHECK ANSWER"}
-
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={async () => { setCheckerLoading(true); setCheckerRes(null); try { const r = await checkAnswerWithAI(checkerQ, checkerA, subjectMeta.name, "check", checkerImage, aiLanguage); setCheckerRes(r); if (r.explain_step_by_step) speakText(r.explain_step_by_step, aiLanguage); } catch (e) { alert(e.message); } setCheckerLoading(false); }} disabled={checkerLoading || (!checkerQ && !checkerImage)}
+              style={{ flex: 1, background: `linear-gradient(135deg, ${C.purple}, #9333ea)`, color: "#fff", padding: 12, borderRadius: 10, fontWeight: 800, border: "none", cursor: "pointer", opacity: (checkerLoading || (!checkerQ && !checkerImage)) ? 0.5 : 1 }}>
+              {checkerLoading ? "THINKING..." : "CHECK & EXPLAIN"}
             </button>
-
-            <button onClick={async () => { setCheckerLoading(true); setCheckerRes(null); try { const r = await checkAnswerWithAI(checkerQ, checkerA, subjectMeta.name, "hint"); setCheckerRes(r); } catch (e) { alert(e.message); } setCheckerLoading(false); }} disabled={checkerLoading || !checkerQ}
-
-              style={{ flex: 1, background: "transparent", color: C.yellow, border: `1.5px solid rgba(240,192,64,.3)`, padding: 12, borderRadius: 10, fontWeight: 900, cursor: "pointer", fontSize: 12 }}>
-
-              {"\ud83d\udca1"} HINT
-
+            <button onClick={async () => { setCheckerLoading(true); setCheckerRes(null); try { const r = await checkAnswerWithAI(checkerQ, checkerA, subjectMeta.name, "hint", checkerImage, aiLanguage); setCheckerRes(r); if (r.verdict) speakText(r.verdict, aiLanguage); } catch (e) { alert(e.message); } setCheckerLoading(false); }} disabled={checkerLoading || (!checkerQ && !checkerImage)}
+              style={{ background: "rgba(168,85,247,0.1)", color: C.purple, border: `1px solid rgba(168,85,247,0.3)`, padding: "0 16px", borderRadius: 10, fontWeight: 800, cursor: "pointer", opacity: (checkerLoading || (!checkerQ && !checkerImage)) ? 0.5 : 1 }}>
+              HINT
             </button>
-
           </div>
 
           {checkerRes && (
+            <div className="scroll-reveal visible" style={{ marginTop: 16, padding: 16, background: checkerRes.correct ? "rgba(34,197,94,0.05)" : "rgba(244,63,94,0.05)", border: `1px solid ${checkerRes.correct ? "rgba(34,197,94,0.2)" : "rgba(244,63,94,0.2)"}`, borderRadius: 12 }}>
 
-            <div style={{ background: checkerRes.correct ? "rgba(57,255,122,0.05)" : "rgba(255,51,102,0.05)", border: `1px solid ${checkerRes.correct ? "rgba(57,255,122,.2)" : "rgba(255,51,102,.2)"}`, borderRadius: 12, padding: 16, position: "relative" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ color: checkerRes.correct ? C.green : C.red, fontSize: 18 }}>{checkerRes.correct ? "✅" : "✘"}</div>
+                  <div style={{ fontWeight: 800, color: checkerRes.correct ? C.green : C.red, letterSpacing: "1px" }}>
+                    {checkerRes.score ? `SCORE: ${checkerRes.score}` : "FEEDBACK"}
+                  </div>
+                </div>
+                <button onClick={() => { if (checkerRes.explain_step_by_step) speakText(checkerRes.explain_step_by_step, aiLanguage); else if (checkerRes.verdict) speakText(checkerRes.verdict, aiLanguage); }} style={{ background: "rgba(255,255,255,0.08)", border: "none", color: "#fff", padding: "6px 12px", borderRadius: 20, cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                  🔊 LISTEN
+                </button>
+              </div>
 
-              <button onClick={() => playAudio(`${checkerRes.verdict}. ${checkerRes.tip || ''}`)} style={{ position: "absolute", top: 14, right: 14, background: "transparent", border: "none", cursor: "pointer", fontSize: 16, opacity: 0.5 }}>{"\ud83c\udf99\ufe0f"}</button>
+              <p style={{ fontSize: 14, color: "#fff", marginBottom: 14, lineHeight: 1.6, fontWeight: 600 }}>{checkerRes.verdict}</p>
 
-              <div style={{ fontWeight: 900, fontSize: 14, color: checkerRes.correct ? C.green : C.red, marginBottom: 8 }}>{checkerRes.correct ? "\u2705 CORRECT!" : "\u274c NEEDS WORK"} {checkerRes.score}</div>
+              {checkerRes.explain_step_by_step && (
+                <div style={{ padding: 12, background: "rgba(168,85,247,0.06)", borderRadius: 8, borderLeft: `3px solid ${C.purple}`, marginBottom: 10, fontSize: 13 }}>
+                  <div style={{ color: C.purple, fontWeight: 800, marginBottom: 6, letterSpacing: "1px" }}>STEP-BY-STEP EXPLANATION:</div>
+                  <div style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.6, whiteSpace: "pre-line" }}>{checkerRes.explain_step_by_step}</div>
+                </div>
+              )}
 
-              <div style={{ fontSize: 12, lineHeight: 1.6, color: C.text }}>{checkerRes.verdict}</div>
+              {checkerRes.mistakes && (
+                <div style={{ padding: 12, background: "rgba(244,63,94,0.06)", borderRadius: 8, borderLeft: `3px solid ${C.red}`, marginBottom: 10, fontSize: 13 }}>
+                  <div style={{ color: C.red, fontWeight: 800, marginBottom: 6, letterSpacing: "1px" }}>MISTAKES DETECTED:</div>
+                  <div style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.5 }}>{checkerRes.mistakes}</div>
+                </div>
+              )}
 
-              {checkerRes.tip && <div style={{ fontSize: 11, background: "rgba(240,192,64,0.06)", padding: "8px 12px", borderRadius: 8, marginTop: 10, color: C.yellow, border: "1px solid rgba(240,192,64,.12)" }}>{"\ud83d\udca1"} {checkerRes.tip}</div>}
-
+              {checkerRes.tip && (
+                <div style={{ padding: 12, background: "rgba(56,189,248,0.06)", borderRadius: 8, borderLeft: `3px solid ${C.blue}`, fontSize: 13 }}>
+                  <div style={{ color: C.blue, fontWeight: 800, marginBottom: 6, letterSpacing: "1px" }}>EXPERT TIP:</div>
+                  <div style={{ color: "rgba(255,255,255,0.9)", lineHeight: 1.5 }}>{checkerRes.tip}</div>
+                </div>
+              )}
             </div>
-
           )}
-
         </div>
-
       )}
 
 
