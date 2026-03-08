@@ -18,9 +18,9 @@ export default defineConfig({
       },
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'MathLock',
-        short_name: 'MathLock',
-        description: 'AI-powered 10th Class SSC Telangana Math study system. 23-day exam prep with timers, AI answer checking, formula quizzes and mistake tracking.',
+        name: 'ExamLock',
+        short_name: 'ExamLock',
+        description: 'AI-powered SSC Telangana study system for Math, Science, and Languages. Multi-subject roadmap with AI tutor and progress tracking.',
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
         display: 'standalone',
