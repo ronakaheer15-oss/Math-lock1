@@ -123,7 +123,12 @@ export const useStore = create(
                                 if (data && data.app_state && !error) {
                                     const cloudState = data.app_state;
                                     if (cloudState.subjectsProgress && Object.keys(cloudState.subjectsProgress).length > 0) {
-                                        useStore.setState(cloudState);
+                                        // Merge cloud state but don't let it overwrite with an empty apiKey
+                                        const mergedState = { ...cloudState };
+                                        if (!mergedState.apiKey || mergedState.apiKey.length < 10) {
+                                            delete mergedState.apiKey;
+                                        }
+                                        useStore.setState(mergedState);
                                     }
                                 }
                                 applyMathDay3(user.email);

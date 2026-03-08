@@ -86,9 +86,10 @@ const speakText = (text, langCode = "en") => {
 async function checkAnswerWithAI(problem, userAnswer, subject = "Mathematics", mode = "check", imageBase64 = null, language = "en") {
   const storeKey = useStore.getState().apiKey;
   const envKey = import.meta.env.VITE_GROQ_API_KEY;
-  const apiKey = storeKey || envKey;
+  // Fallback: use envKey if storeKey is missing or too short (empty string)
+  const apiKey = (storeKey && storeKey.length > 5) ? storeKey : envKey;
 
-  if (!apiKey) throw new Error("Please add your Groq API Key in settings");
+  if (!apiKey) throw new Error("API Key missing! Please ensure VITE_GROQ_API_KEY is set in Vercel and you have redeployed.");
 
   let langStr = "English";
   if (language === "hi") langStr = "Hindi";
