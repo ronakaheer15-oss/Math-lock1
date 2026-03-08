@@ -103,7 +103,7 @@ async function checkAnswerWithAI(problem, userAnswer, subject = "Mathematics", m
   let modelToUse = "llama-3.3-70b-versatile";
 
   if (imageBase64) {
-    modelToUse = "llama-3.2-11b-vision-preview";
+    modelToUse = "llama-3.2-90b-vision-preview";
     messages = [
       {
         role: "user",
